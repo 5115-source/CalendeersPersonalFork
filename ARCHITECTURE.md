@@ -39,7 +39,48 @@ Add description and diagram here
 
 ## System Context Diagram: 
 
-Add description and diagram here
+
+The system context diagram shows how Calendeers interacts with students and external systems. Calendeers is a Discord bot that helps UW students organize their Canvas assignments and Register.UW class schedules.
+
+```mermaid
+flowchart TD
+    Student["UW Student"]
+    Register["Register.UW"]
+    Discord["Discord Platform"]
+    Bot["Calendeers Bot"]
+    Canvas["UW Canvas Calendar Feed"]
+    CDN["Discord CDN"]
+
+    Register -->|"Exports class schedule (.ics)"| Student
+    Student <-->|"Commands and responses"| Discord
+    Discord <-->|"Interactions and bot replies"| Bot
+    Discord -->|"Hosts uploaded attachments"| CDN
+    Bot -->|"Requests calendar feed via HTTPS"| Canvas
+    Canvas -->|"Returns calendar events"| Bot
+    Bot -->|"Downloads uploaded .ics file"| CDN
+    CDN -->|"Returns schedule file"| Bot
+
+    style Bot fill:#fff2b3,stroke:#b8860b,stroke-width:3px,color:#222
+```
+
+### External Systems and Interactions
+
+1. **UW Student:** Students interact with Calendeers through Discord commands such as `/connect`, `/classes`, `/schedule`, and `/missing` to manage class schedules and assignments.
+
+2. **Discord Platform:** Discord acts as the communication interface between students and the bot. It delivers commands and interactions to Calendeers and displays the bot's responses.
+
+3. **UW Canvas Calendar Feed:** Calendeers retrieves calendar events and assignment information through a student's Canvas iCalendar feed URL using HTTPS.
+
+4. **Register.UW:** Students export their class schedules as `.ics` files from Register.UW and upload them through Discord. Calendeers does not directly connect to Register.UW.
+
+5. **Discord CDN:** Discord hosts uploaded schedule attachments. Calendeers downloads these files to process class schedule information.
+
+### System Boundary
+
+Calendeers is the central system in this diagram. It processes Discord interactions, retrieves calendar information, parses uploaded schedules, and manages locally saved user data. Its local JSON storage is considered an internal component rather than a separate external system.
+
+This diagram focuses on the system's external relationships rather than its internal implementation.
+
 
 ## Network Diagram: 
 
