@@ -35,7 +35,8 @@ The **green shapes** mark the beginning and end, **yellow rectangles** represent
 
 ## Use Case Diagram: 
 
-Add description and diagram here
+<img width="1704" height="756" alt="image" src="https://github.com/user-attachments/assets/0d1ffcac-cdaa-4fef-bac2-9b7fd1f1d550" />
+
 
 ## System Context Diagram: 
 
