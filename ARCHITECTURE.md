@@ -249,4 +249,233 @@ This function makes no network calls and touches no files. `tests/missingAssignm
 
 ## Class Diagram: 
 
-Add description and diagram here
+The Calendeers discord bot is not an object orientsd program with classes, rather it is a bot that utilizes many interconnected modules to handle dependencies and running. THis is important to understand, and in the 'Class Diagram' we have decided to instead draw out the connections between all of these modules to give a map of the connections between pieces of the bot code. Many of these modules are based off of the template discord bot that we based Calendeers off of with some added data structures made to add the functionality we desired.
+
+### Important Architectural Design Highlights
+
+A few architectural decisions are worth documenting because they demonstrate an understanding of the application's actual implementation.
+
+#### No Traditional Database
+
+Calendeers uses JSON files for persistent storage rather than a traditional relational database.
+
+The application maintains the following data:
+
+- **Calendar links**
+- **Class schedules**
+- **Completed assignments**
+
+This approach provides a lightweight persistence solution without requiring a separate database system.
+
+#### Event-Driven Architecture
+
+The bot uses Discord.js events to respond to user activity.
+
+Event handlers are dynamically loaded, making the architecture modular and allowing new event handlers to be added relatively easily without significantly changing the existing application structure.
+
+#### Separation of Responsibilities
+
+The application's services are separated according to their specific responsibilities:
+
+- **CalendarStore:** Handles data persistence and encryption.
+- **CanvasFeed:** Processes Canvas calendar data.
+- **ClassSchedule:** Handles Register.UW schedule processing.
+
+This separation keeps individual services focused on specific tasks and makes the codebase easier to maintain.
+
+#### Centralized Interaction Handling
+
+`interactionCreate.js` serves as the main controller for handling Discord interactions, including:
+
+- Slash commands
+- Modal submissions
+- Select menu interactions
+
+Centralizing interaction handling provides a consistent entry point for processing user interactions and coordinating the application's underlying services.
+
+### Context For Diagram: 
+
+| Relationship | Explanation |
+|---|---|
+| App → DiscordClient | The application creates and configures the Discord client. |
+| App → Helpers | The application imports `loadEvents` through the helpers index. |
+| LoadEvents → LoadFiles | The event loader uses the file loader to discover event modules. |
+| LoadEvents → Event Handlers | The event loader dynamically imports and registers event handlers. |
+| InteractionCreate → CalendarStore | The interaction handler reads, saves, and deletes user calendar data. |
+| InteractionCreate → CanvasFeed | The interaction handler retrieves upcoming events and missing assignments. |
+| InteractionCreate → ClassSchedule | The interaction handler downloads, parses, and formats class schedules. |
+| Course → Meeting | A course contains one or more meeting records. |
+| ClassSchedule → ScheduleError | The schedule service throws this custom error when schedule processing fails. |
+
+### 'Class' Diagram
+
+```mermaid
+classDiagram
+    direction TB
+
+    %% APPLICATION
+
+    class App {
+        <<module>>
+    }
+
+    class DiscordClient {
+        <<external discord.js>>
+        +login(token)
+        +on(event, handler)
+        +once(event, handler)
+    }
+
+    class Collection {
+        <<external discord.js>>
+        +set(key, value)
+        +get(key)
+        +clear()
+    }
+
+    %% HELPERS
+
+    class Helpers {
+        <<module>>
+    }
+
+    class LoadEvents {
+        <<module>>
+        +loadEvents(client, dirName)$
+    }
+
+    class LoadFiles {
+        <<module>>
+        +loadFiles(dirName, ext)$
+    }
+
+    %% EVENT HANDLERS
+
+    class MessageCreate {
+        <<event handler>>
+        +String name
+        +execute(message, client)
+    }
+
+    class GuildMemberAdd {
+        <<event handler>>
+        +String name
+        +execute(member, client)
+        +getWelcomeMessage(userId)
+        +getWelcomeMessageWithMeme(userId)
+        +getMeme()
+    }
+
+    class Ready {
+        <<event handler>>
+        +String name
+        +Boolean once
+        +execute(client)
+    }
+
+    class InteractionCreate {
+        <<event handler>>
+        +String name
+        +execute(interaction, client)
+        +formatMissingAssignments(assignments, days, now)$
+        +buildMarkDoneMenu(assignments)$
+    }
+
+    %% SERVICES
+
+    class CalendarStore {
+        <<module>>
+        +saveCalendar(userId, url)$
+        +getCalendar(userId)$
+        +removeCalendar(userId)$
+        +saveSchedule(userId, schedule)$
+        +getSchedule(userId)$
+        +removeSchedule(userId)$
+        +getCompletedAssignments(userId)$
+        +markAssignmentsCompleted(userId, ids)$
+        +removeCompletedAssignments(userId)$
+    }
+
+    class CanvasFeed {
+        <<module>>
+        +validateFeedURL(input)$
+        +getUpcomingEvents(url, options)$
+        +findMissingAssignments(calendar, options)$
+        +getMissingAssignments(url, options)$
+    }
+
+    class ClassSchedule {
+        <<module>>
+        +downloadScheduleFile(attachment)$
+        +parseClassSchedule(text)$
+        +formatClassSchedule(schedule)$
+    }
+
+    class ScheduleError {
+        +ScheduleError()
+    }
+
+    %% DOMAIN DATA STRUCTURES
+
+    class Course {
+        <<data structure>>
+        +String name
+        +Meeting[] meetings
+    }
+
+    class Meeting {
+        <<data structure>>
+        +String[] days
+        +Number start
+        +Number end
+        +String location
+    }
+
+    class CalendarEvent {
+        <<data structure>>
+        +String title
+        +String location
+        +Number start
+        +Boolean allDay
+    }
+
+    class MissingAssignment {
+        <<data structure>>
+        +String id
+        +String title
+        +String url
+        +Number due
+        +Boolean allDay
+    }
+
+    %% APPLICATION RELATIONSHIPS
+
+    App --> DiscordClient : creates
+    App --> Collection : creates
+    App ..> Helpers : imports loadEvents
+
+    Helpers ..> LoadEvents : re-exports
+    Helpers ..> LoadFiles : re-exports
+
+    LoadEvents ..> LoadFiles : uses
+    LoadEvents ..> DiscordClient : registers handlers
+    LoadEvents ..> Collection : stores handlers
+
+    LoadEvents ..> MessageCreate : loads
+    LoadEvents ..> GuildMemberAdd : loads
+    LoadEvents ..> Ready : loads
+    LoadEvents ..> InteractionCreate : loads
+
+    %% SERVICE RELATIONSHIPS
+
+    InteractionCreate ..> CalendarStore : uses
+    InteractionCreate ..> CanvasFeed : uses
+    InteractionCreate ..> ClassSchedule : uses
+
+    ClassSchedule ..> ScheduleError : throws
+    ClassSchedule ..> Course : creates
+    Course "1" *-- "0..*" Meeting : contains
+
+    CanvasFeed ..> CalendarEvent : produces
+    CanvasFeed ..> MissingAssignment : produces
+```
