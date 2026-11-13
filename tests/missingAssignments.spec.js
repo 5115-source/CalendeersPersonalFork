@@ -1,7 +1,7 @@
 import { expect } from "chai";
 import ical from "node-ical";
-import { findMissingAssignments } from "../src/services/canvasFeed";
-import { formatMissingAssignments } from "../src/events/interactionCreate";
+import { findMissingAssignments } from "../src/services/canvasFeed.js";
+import { formatMissingAssignments } from "../src/events/interactionCreate.js";
 
 const NOW = new Date("2026-10-30T20:00:00Z");
 

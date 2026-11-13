@@ -2,12 +2,14 @@
   "name": "memebot_discord",
   "version": "1.0.0",
   "description": "this is a demo project for teaching how to build a discord bot",
+  "type": "module",
   "scripts": {
     "build": "rm -rf build && esbuild src/*.js src/**/*.js --platform=node --format=cjs  --outdir=build --outbase=src",
     "start": "npm run build && node -r dotenv/config build/app.js",
     "dev": "nodemon",
     "prod": "node build/app.js",
-    "test": "mocha -r esbuild-runner/register ./tests/*.spec.js --exit"
+    "test": "mocha -r esbuild-runner/register ./tests/*.spec.js --exit",
+    "test:coverage": "node scripts/coverage.mjs"
   },
   "keywords": [
     "discord",
@@ -24,6 +26,7 @@
     "node-ical": "^0.25.6"
   },
   "devDependencies": {
+    "c8": "^12.0.0",
     "chai": "^4.3.6",
     "dotenv": "^16.0.2",
     "esbuild": "^0.28.2",
