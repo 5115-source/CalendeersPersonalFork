@@ -1,24 +1,12 @@
-Note: Basic file setup, we should make this report look proffesional with headings and things as we work on it)
+# Calendeers — Code Analysis and Hardening Report
 
-1. Divide up the different perspectives on code analysis and code hardening into meaningful tasks for each group member. Your group does not need to do all tasks, but each person should choose two from the following:
+**Introduction**
 
-    1. Examine your code for technical debt and code smells. [can be done by more than one person]
-    2. Assess the cyclomatic complexity of the methods in your bot.
-    3. Measure your cohesion and coupling (architecture diagrams might help with this!).
-    4. Measure your test coverage.
-    5. Build a threat model.
-    6. Write a fuzzer to try to break functionality in your bot (see Fast-check for a short intro to running fast-check tests in Codespaces). [can be done by more than one person]
-    7. Unit tests. Write at least 3, these are easy and quick. [can be done by more than one person]
-    8. Smoke test. If you don't have one already, write a test that will call all the major functions in your bot and verify that core features are working.
-    9. Implement continuous integration / continuous deployment for your bot.
-    10. Your own idea about what the bot needs (propose a scope to Dr. Champion)
+Calendeers is a Discord bot designed to help students manage their academic schedules through Canvas and Register.UW integration. This report evaluates the bot's code quality, maintainability, complexity, architecture, and automated testing. The goal is to identify technical weaknesses, document existing limitations, and recommend improvements that make Calendeers more reliable and easier to maintain.
 
-2. Describe your efforts and findings in a shared code analysis report in your repo.
-3. Create user stories associated with your findings (at least 2 per person; you must write out the story yourself).
+---
 
-## Code Analysis - Joon
-
-### Task 1: Technical Debt and Code Smells
+## 1. Technical Debt and Code Smells
 
 **File analyzed:** `src/events/interactionCreate.js`
 
@@ -40,7 +28,7 @@ The interaction handler manages Discord responses, input validation, calendar da
 **Summary:** These are maintainability concerns rather than confirmed runtime bugs. Refactoring would improve readability, testability, and future feature development.
 
 
-### Task 2: Cyclomatic Complexity
+## 2. Cyclomatic Complexity
 
 **File analyzed:** `src/events/interactionCreate.js`
 
@@ -55,7 +43,7 @@ The interaction handler manages Discord responses, input validation, calendar da
 **Conclusion:** The current event handler has high structural complexity and would benefit from refactoring.
 
 
-### Task 3: Cohesion and Coupling
+## 3. Cohesion and Coupling
 
 **File analyzed:** `src/events/interactionCreate.js`
 
@@ -83,4 +71,106 @@ Separate the interaction handler into smaller command-specific modules. Keep cal
 The current design has several direct service dependencies and mixes multiple responsibilities within one event handler. Refactoring could improve cohesion, reduce unnecessary coupling, and simplify maintenance.
 
 **Measurement Note:** Dependency counts are based on static imports. Cohesion was assessed qualitatively rather than using a numerical cohesion metric.
+
+## 4. Test Coverage Analysis
+
+**Objective:** Measure and improve test coverage across the Calendeers codebase, with focus on critical calendar and schedule-processing functionality.
+
+**Methodology:**
+- **Testing Framework:** Mocha with Chai assertions for unit testing
+- **Coverage Tool:** c8, which uses V8's native code coverage capabilities and generates Istanbul-compatible reports
+- **Scope:** All 11 JavaScript source files under `src/`
+- **Key Issue Addressed:** Resolved ES module import compatibility issues and configured c8 to collect accurate coverage data
+- **Baseline:** 8 existing unit tests in `tests/missingAssignments.spec.js`
+- **Improvement:** Added 27 new comprehensive unit tests targeting core service functions
+
+**Coverage Results:**
+
+| Metric | Before (8 Tests) | After (35 Tests) | Improvement |
+|--------|------------------|------------------|-------------|
+| **Statement Coverage** | 19.60% | 27.82% | +8.22 pp |
+| **Branch Coverage** | 79.31% | 85.98% | +6.67 pp |
+| **Function Coverage** | 11.62% | 20.93% | +9.31 pp |
+| **Line Coverage** | 19.60% | 27.82% | +8.22 pp |
+| **Passing Tests** | 8 | 35 | +27 tests |
+
+**File-Level Improvements:**
+- **`canvasFeed.js`:** 35.81% → 45.11% (+9.30 pp, +26% relative)
+- **`classSchedule.js`:** 16.29% → 60.67% (+44.38 pp, +272% relative) — significant improvement through comprehensive schedule parsing tests
+- **`calendarStore.js`:** 27.27% → 27.27% — no new tests added for this module
+
+**Coverage Gaps & Untested Modules:**
+- **Discord Event Handlers** (`guildMemberAdd.js`, `messageCreate.js`, `ready.js`): 0% coverage — could be tested using mocked Discord.js interactions
+- **Bot Initialization** (`app.js`): 0% coverage — requires bot startup and configuration context
+- **Helper Modules** (`index.js`, `loadEvents.js`, `loadFiles.js`): 0% coverage — require event loader and context setup
+
+These gaps highlight opportunities for further testing. Discord event handlers and helper modules could be tested using mocks, while integration tests would help verify bot initialization and interactions between components.
+
+**Key Findings — Test Coverage:**
+- ES module import resolution was blocking coverage measurement entirely
+- The original tests did not directly exercise `parseClassSchedule()`
+- Statement coverage across the entire codebase improved by approximately 42% relative to baseline, while service-layer coverage increased from 27.04% to 45.90%
+- Reported branch coverage reached 85.98%, although significant portions of the codebase remain untested
+
+## 5. Unit Testing
+
+**Objective:** Implement comprehensive unit tests for untested or undertested functionality.
+
+**Implementation:** 27 unit tests added to `tests/validationSchedule.spec.js`
+
+**validateFeedURL() — 12 Tests:**
+- Valid Canvas calendar URLs (webcal:// and https:// protocols)
+- Whitespace trimming and normalization
+- Rejection of invalid hostnames and wrong domains
+- Rejection of invalid protocols and non-HTTPS schemes
+- Port number validation
+- Credential/authentication rejection
+- Query parameter validation
+- URL fragment rejection
+- Invalid URL path formats
+- User ID validation
+- Missing `.ics` extension detection
+- Case-insensitive protocol handling
+
+**parseClassSchedule() — 15 Tests:**
+- Valid Register.UW `.ics` schedule file parsing
+- Multi-course schedule extraction
+- Course name parsing
+- Recurring event meeting day extraction (RRULE BYDAY)
+- Meeting time calculations with UTC-to-America/Los_Angeles timezone conversion
+- Meeting location extraction
+- Duplicate meeting detection and rejection
+- Invalid `.ics` format rejection
+- Plain text (non-calendar) rejection
+- Error handling when no meetings found
+- All-day event filtering (VALUE=DATE)
+- Courses with no meetings handling
+- Chronological ordering by day and start time
+- Whitespace normalization in course names
+- Invalid input type validation
+
+**Test Results:**
+- **All 35 tests passing** (61ms execution time)
+- **0 failures, 0 regressions** — all original 8 tests remain passing
+- No application functionality modified
+- Synthetic test data used (no real Canvas tokens or personal information)
+
+**Impact on Reliability:**
+- The new tests help detect regressions in Canvas URL validation and class schedule parsing, including malformed inputs, recurring events, and edge cases
+- Timezone conversion logic is now verified against expected UTC→Pacific time calculations
+- Security-relevant URL validation is explicitly tested with adversarial inputs
+- Automated test execution helps catch potential issues when code changes occur
+
+**Key Findings — Unit Testing:**
+
+Overall, the 27 new unit tests improve confidence in Calendeers' Canvas URL validation and class schedule parsing. They also help detect potential regressions involving malformed input, recurring events, and timezone conversions. However, additional tests are needed for Discord interactions, calendar storage, and external API failures.
+
+**Testing Gaps & Future Recommendations:**
+- Event handlers require Discord.js mock infrastructure (beyond current scope)
+- Integration testing would verify end-to-end calendar workflows
+- Fuzzing could reveal additional edge cases in calendar parsing
+- Mock-based tests for `calendarStore.js` file operations would improve storage-layer coverage
+- Mock-based tests for API calls in `canvasFeed.js` would reach currently uncovered network paths
+
+---
 

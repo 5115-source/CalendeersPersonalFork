@@ -1,4 +1,4 @@
-import loadFiles from "./loadFiles";
+import loadFiles from "./loadFiles.js";
 import ascii from "ascii-table";
 import path from "path";
 

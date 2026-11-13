@@ -19,20 +19,20 @@ import {
   getCompletedAssignments,
   markAssignmentsCompleted,
   removeCompletedAssignments
-} from "../services/calendarStore";
+} from "../services/calendarStore.js";
 
 import {
   validateFeedURL,
   getUpcomingEvents,
   getMissingAssignments
-} from "../services/canvasFeed";
+} from "../services/canvasFeed.js";
 
 import {
   ScheduleError,
   downloadScheduleFile,
   parseClassSchedule,
   formatClassSchedule
-} from "../services/classSchedule";
+} from "../services/classSchedule.js";
 
 function safeText(value, maxLength = 100) {
   return String(value || "")
