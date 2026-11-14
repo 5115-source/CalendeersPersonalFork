@@ -25,6 +25,13 @@ The interaction handler manages Discord responses, input validation, calendar da
 
 **Recommendation:** Keep interaction handling separate from business logic and use dedicated services or helper functions.
 
+**File analyzed:** `src/services/canvasFeed.js`
+
+**Finding 4: Same output out of a condition**
+The logic of tomorrowOnly function in canvasFeed returns the same result regardless of the condition. " return tomorrowOnly ? sorted : sorted;" 
+
+**Recommendation:** Double check the function's logic and repair it if problems found.
+
 **Summary:** These are maintainability concerns rather than confirmed runtime bugs. Refactoring would improve readability, testability, and future feature development.
 
 
@@ -172,5 +179,17 @@ Overall, the 27 new unit tests improve confidence in Calendeers' Canvas URL vali
 - Mock-based tests for `calendarStore.js` file operations would improve storage-layer coverage
 - Mock-based tests for API calls in `canvasFeed.js` would reach currently uncovered network paths
 
+## 6. Fuzzer
+
+**Objective:** Generate random links to break the canvasFeed.js to ensure no malicious links or false links being used.
+
+**Implementation:** Created src/fuzz/fuzz-test.js using fast-check library. Fuzzer generates 1000 random links each for valid canvas calendar, untrusted hosts, and URL query string and fragments.
+
+**Result:** All random links are successfully filtered. Valid canvas URLs are processed, and the other links are rejected.
+
+**Testing Gaps & Future Recommendations:**
+- Fuzzer test is recommended to be implemented across this project to reduce the risk of mis-use and to prevent bugs.
+- Limited URL Variations; Only 3 types of links are generated for this test. More variations can be generated to further test the filtering function.
+- The fuzzer only tests validateFeedURL(). It does not test whether canvasFeed.js can safely handle corrupted, incomplete, or malicious .ics calendar data.
 ---
 
