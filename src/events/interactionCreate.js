@@ -44,6 +44,31 @@ function safeText(value, maxLength = 100) {
 const MAX_MESSAGE_LENGTH = 1900;
 const MAX_MENU_OPTIONS = 25;
 
+// Formats a timestamp for display: a plain date for all-day items,
+// otherwise a Discord timestamp that renders in the user's timezone.
+export function formatEventDate(timestamp, allDay) {
+  if (allDay) {
+    return new Date(timestamp).toLocaleDateString("en-US", {
+      timeZone: "UTC",
+      month: "short",
+      day: "numeric"
+    }) + " (all day)";
+  }
+
+  return `<t:${Math.floor(timestamp / 1000)}:f>`;
+}
+
+// Shared formatter for /schedule and /upcoming-assignments replies.
+export function formatUpcomingEvents(events, heading) {
+  const lines = events.map(item =>
+    `📚 **${safeText(item.title)}**\n` +
+    `🕒 ${formatEventDate(item.start, item.allDay)}\n` +
+    (item.location ? `📍 ${safeText(item.location, 60)}` : "")
+  );
+
+  return `🦌 **${heading}**\n\n` + lines.join("\n\n");
+}
+
 export function formatMissingAssignments(assignments, lookbackDays, now = Date.now()) {
   let content =
     `⚠️ **You have ${assignments.length} missing ` +
@@ -57,13 +82,7 @@ export function formatMissingAssignments(assignments, lookbackDays, now = Date.n
 
   for (const item of assignments) {
     const daysLate = Math.max(1, Math.floor((now - item.due) / 86400000));
-    const due = item.allDay
-      ? new Date(item.due).toLocaleDateString("en-US", {
-          timeZone: "UTC",
-          month: "short",
-          day: "numeric"
-        }) + " (all day)"
-      : `<t:${Math.floor(item.due / 1000)}:f>`;
+    const due = formatEventDate(item.due, item.allDay);
     const block =
       `📕 **${safeText(item.title)}**\n` +
       `🕒 Due ${due} · ${daysLate} ${daysLate === 1 ? "day" : "days"} late` +
@@ -185,31 +204,11 @@ const event = {
             return;
           }
 
-          const lines = events.map(item => {
-            const date = item.allDay
-              ? new Date(item.start).toLocaleDateString(
-                  "en-US",
-                  {
-                    timeZone: "UTC",
-                    month: "short",
-                    day: "numeric"
-                  }
-                ) + " (all day)"
-              : `<t:${Math.floor(item.start / 1000)}:f>`;
-
-            return (
-              `📚 **${safeText(item.title)}**\n` +
-              `🕒 ${date}\n` +
-              (item.location
-                ? `📍 ${safeText(item.location, 60)}`
-                : "")
-            );
-          });
-
           await interaction.editReply({
-            content:
-              "🦌 **Your Upcoming Canvas Events**\n\n" +
-              lines.join("\n\n"),
+            content: formatUpcomingEvents(
+              events,
+              "Your Upcoming Canvas Events"
+            ),
             allowedMentions: { parse: [] }
           });
 
@@ -262,32 +261,11 @@ const event = {
                 return;
             }
 
-            const lines = events.map(item => {
-                const date = item.allDay
-                    ? new Date(item.start).toLocaleDateString(
-                        "en-US",
-                        {
-                            timeZone: "UTC",
-                            month: "short",
-                            day: "numeric"
-                        }
-                    ) + " (all day)"
-                    : `<t:${Math.floor(item.start / 1000)}:f>`;
-
-                return (
-                    `📚 **${safeText(item.title)}**\n` +
-                    `🕒 ${date}\n` +
-                    (item.location
-                        ? `📍 ${safeText(item.location, 60)}`
-                        : "")
-                );
-            });
-
             await interaction.editReply({
-                content:
-                    `🦌 **Your Upcoming Assignments ` +
-                    `(Next ${numberOfDays} Days)**\n\n` +
-                    lines.join("\n\n"),
+                content: formatUpcomingEvents(
+                    events,
+                    `Your Upcoming Assignments (Next ${numberOfDays} Days)`
+                ),
                 allowedMentions: { parse: [] }
             });
 

@@ -1,2 +1,2 @@
-export { default as loadEvents } from "./loadEvents.js";
-export { default as loadFiles } from "./loadFiles.js";
+export { loadEvents } from "./loadEvents.js";
+export { loadFiles } from "./loadFiles.js";

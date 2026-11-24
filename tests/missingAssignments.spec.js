@@ -1,7 +1,10 @@
 import { expect } from "chai";
 import ical from "node-ical";
 import { findMissingAssignments } from "../src/services/canvasFeed.js";
-import { formatMissingAssignments } from "../src/events/interactionCreate.js";
+import {
+  formatMissingAssignments,
+  formatUpcomingEvents
+} from "../src/events/interactionCreate.js";
 
 const NOW = new Date("2026-10-30T20:00:00Z");
 
@@ -126,6 +129,16 @@ describe("formatMissingAssignments", () => {
     expect(content).to.include("2 days late");
   });
 
+  it("formats all-day due dates as a plain date", () => {
+    const content = formatMissingAssignments(
+      [{ id: "a", title: "All day task", url: "", due: Date.UTC(2026, 9, 28), allDay: true }],
+      14,
+      NOW.getTime()
+    );
+
+    expect(content).to.include("Oct 28 (all day)");
+  });
+
   it("stays under Discord's message limit for long lists", () => {
     const many = Array.from({ length: 60 }, (_, i) => ({
       id: `a${i}`,
@@ -138,5 +151,34 @@ describe("formatMissingAssignments", () => {
 
     expect(content.length).to.be.at.most(2000);
     expect(content).to.match(/…and \d+ more/);
+  });
+});
+
+describe("formatUpcomingEvents", () => {
+  it("formats timed and all-day events under the given heading", () => {
+    const start = Date.UTC(2026, 10, 2, 18, 0, 0);
+    const content = formatUpcomingEvents(
+      [
+        { title: "Quiz 3", start, allDay: false, location: "MGH 389" },
+        { title: "Project due", start: Date.UTC(2026, 10, 5), allDay: true, location: "" }
+      ],
+      "Your Upcoming Canvas Events"
+    );
+
+    expect(content).to.include("🦌 **Your Upcoming Canvas Events**");
+    expect(content).to.include("📚 **Quiz 3**");
+    expect(content).to.include(`<t:${Math.floor(start / 1000)}:f>`);
+    expect(content).to.include("📍 MGH 389");
+    expect(content).to.include("Nov 5 (all day)");
+  });
+
+  it("sanitizes titles and locations", () => {
+    const content = formatUpcomingEvents(
+      [{ title: "Quiz <@everyone>", start: Date.now(), allDay: false, location: "Room `1`" }],
+      "Heading"
+    );
+
+    expect(content).to.not.include("<@everyone>");
+    expect(content).to.not.include("`1`");
   });
 });
