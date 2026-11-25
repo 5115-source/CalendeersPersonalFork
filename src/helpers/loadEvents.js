@@ -1,8 +1,8 @@
-import loadFiles from "./loadFiles.js";
+import { loadFiles } from "./loadFiles.js";
 import ascii from "ascii-table";
 import path from "path";
 
-export default function loadEvents(client, dirName) {
+export function loadEvents(client, dirName) {
   client.events.clear();
 
   const files = loadFiles(dirName, ".js");
